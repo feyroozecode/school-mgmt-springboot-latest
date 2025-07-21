@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: school-mgmt-postgres
+    environment:
+      POSTGRES_DB: school_mgmt
+      POSTGRES_USER: school_user
+      POSTGRES_PASSWORD: school_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - school-network
+
+  backend:
+    build: .
+    container_name: school-mgmt-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/school_mgmt
+      SPRING_DATASOURCE_USERNAME: school_user
+      SPRING_DATASOURCE_PASSWORD: school_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: mySecretKey123456789012345678901234567890
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - school-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  school-network:
+    driver: bridge
+
