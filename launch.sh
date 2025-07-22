@@ -1,70 +1,70 @@
 #!/bin/bash
 
-# Script de lancement automatisé pour l'application School Management System
-# Ce script construit et lance l'application avec Docker
-
-set -e
-
 echo "🚀 Lancement de l'application School Management System..."
 
-# Vérifier si Docker est installé
+# Vérification Docker
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker n'est pas installé. Veuillez installer Docker avant de continuer."
+    echo "❌ Docker manquant. Installez Docker: https://docs.docker.com/get-docker/"
     exit 1
 fi
 
-# Vérifier si Docker Compose est installé
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose n'est pas installé. Veuillez installer Docker Compose avant de continuer."
-    exit 1
-fi
-
-# Arrêter les conteneurs existants s'ils sont en cours d'exécution
-echo "🛑 Arrêt des conteneurs existants..."
-docker-compose down --remove-orphans
-
-# Nettoyer les images et volumes orphelins (optionnel)
+# Nettoyage préalable
 echo "🧹 Nettoyage des ressources Docker..."
+docker-compose down --remove-orphans
 docker system prune -f
 
-# Construire et lancer les services
-echo "🔨 Construction et lancement des services..."
-docker-compose up --build -d
+# Vérification des fichiers requis
+echo "🔍 Vérification des prérequis..."
+if [ ! -f "Dockerfile" ]; then
+    echo "❌ Dockerfile manquant!"
+    exit 1
+fi
 
-# Attendre que les services soient prêts
-echo "⏳ Attente du démarrage des services..."
-sleep 30
+if [ ! -f "docker-compose.yml" ]; then
+    echo "❌ docker-compose.yml manquant!"
+    exit 1
+fi
 
-# Vérifier l'état des conteneurs
+if [ ! -d "secrets" ] || [ ! -f "secrets/db_password.txt" ] || [ ! -f "secrets/jwt_secret.txt" ]; then
+    echo "❌ Fichiers secrets manquants! Créez le dossier 'secrets' avec db_password.txt et jwt_secret.txt"
+    exit 1
+fi
+
+# Lancement avec Docker Compose
+echo "🚀 Lancement des services..."
+docker-compose up -d
+
+# Augmentation du temps d'attente
+echo "⏳ Attente du démarrage des services (60s)..."
+sleep 60
+
+# Vérification des conteneurs
 echo "📊 État des conteneurs:"
 docker-compose ps
 
-# Vérifier la santé de l'application
-echo "🏥 Vérification de la santé de l'application..."
-for i in {1..10}; do
-    if curl -f http://localhost:8080/api/health > /dev/null 2>&1; then
-        echo "✅ L'application est prête et accessible sur http://localhost:8080"
-        echo "📚 Documentation API disponible sur http://localhost:8080/swagger-ui.html"
+# Vérification de santé avec retry
+MAX_RETRIES=15
+for ((i=1; i<=$MAX_RETRIES; i++)); do
+    if curl -sSf http://localhost:8080/api/health > /dev/null; then
+        echo -e "\n✅ Application prête: http://localhost:8080"
+        echo "📚 Swagger UI: http://localhost:8080/swagger-ui.html"
         break
     else
-        echo "⏳ Tentative $i/10 - L'application n'est pas encore prête..."
+        echo "⏳ Tentative $i/$MAX_RETRIES - Démarrage en cours..."
         sleep 10
     fi
 done
 
-# Afficher les logs si l'application n'est pas prête
-if ! curl -f http://localhost:8080/api/health > /dev/null 2>&1; then
-    echo "❌ L'application ne répond pas. Voici les logs:"
-    docker-compose logs backend
+# Gestion des erreurs
+if ! curl -sSf http://localhost:8080/api/health > /dev/null; then
+    echo -e "\n❌ Échec du démarrage. Logs du backend:"
+    docker-compose logs --tail=100 backend
+    echo "🔍 Débogage interactif:"
+    echo "1. Inspecter le conteneur: docker exec -it $(docker-compose ps -q backend) bash"
+    echo "2. Vérifier les fichiers: docker exec -it $(docker-compose ps -q backend) ls -l /app"
     exit 1
 fi
 
-echo ""
-echo "🎉 Application lancée avec succès!"
-echo "🌐 URL de l'application: http://localhost:8080"
-echo "📖 Documentation API: http://localhost:8080/swagger-ui.html"
-echo "🗄️  Base de données PostgreSQL: localhost:5432"
-echo ""
-echo "Pour arrêter l'application, utilisez: docker-compose down"
-echo "Pour voir les logs, utilisez: docker-compose logs -f"
-
+echo -e "\n🎉 Application lancée avec succès!"
+echo "Pour arrêter: docker-compose down"
+echo "Pour les logs: docker-compose logs -f"

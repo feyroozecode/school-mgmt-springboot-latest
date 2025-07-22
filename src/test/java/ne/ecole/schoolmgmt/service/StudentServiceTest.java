@@ -44,11 +44,11 @@ public class StudentServiceTest {
     void setUp() {
         student = new Student();
         student.setId(1L);
-        student.setFirstName("Jean");
-        student.setLastName("Dupont");
-        student.setFirstNameArabic("جان");
-        student.setLastNameArabic("دوبون");
-        student.setPreferredLanguage("fr");
+        student.setFirstName("Ahmad");
+        student.setLastName("Khoury");
+        student.setFirstNameArabic("أحمد");
+        student.setLastNameArabic("خوري");
+        student.setPreferredLanguage("ar");
         student.setPrimaryScript(PrimaryScript.LATIN);
         student.setBirthDate(LocalDate.of(2010, 5, 15));
         student.setGender(Gender.MASCULIN);
@@ -58,12 +58,12 @@ public class StudentServiceTest {
 
         studentDto = new StudentDto();
         studentDto.setId(1L);
-        studentDto.setFirstName("Jean");
-        studentDto.setLastName("Dupont");
-        studentDto.setFirstNameArabic("جان");
-        studentDto.setLastNameArabic("دوبون");
-        studentDto.setPreferredLanguage("fr");
-        studentDto.setPrimaryScript(PrimaryScript.LATIN);
+        studentDto.setFirstName("Ahmad");
+        studentDto.setLastName("Khoury");
+        studentDto.setFirstNameArabic("أحمد");
+        studentDto.setLastNameArabic("خوري");
+        studentDto.setPreferredLanguage("ar");
+        studentDto.setPrimaryScript(PrimaryScript.ARABIC);
         studentDto.setBirthDate(LocalDate.of(2010, 5, 15));
         studentDto.setGender(Gender.MASCULIN);
         studentDto.setClassName("CM2");
@@ -71,8 +71,8 @@ public class StudentServiceTest {
         studentDto.setEducationLevel(EducationLevel.CP);
 
         createStudentRequest = new CreateStudentRequest();
-        createStudentRequest.setFirstName("Jean");
-        createStudentRequest.setLastName("Dupont");
+        createStudentRequest.setFirstName("Isssa");
+        createStudentRequest.setLastName("Ahmad");
         createStudentRequest.setFirstNameArabic("جان");
         createStudentRequest.setLastNameArabic("دوبون");
         createStudentRequest.setPreferredLanguage("fr");

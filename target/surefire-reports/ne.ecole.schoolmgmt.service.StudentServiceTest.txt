@@ -1,0 +1,56 @@
+-------------------------------------------------------------------------------
+Test set: ne.ecole.schoolmgmt.service.StudentServiceTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 2, Skipped: 0, Time elapsed: 5.289 s <<< FAILURE! - in ne.ecole.schoolmgmt.service.StudentServiceTest
+ne.ecole.schoolmgmt.service.StudentServiceTest.testSearchStudents  Time elapsed: 0.109 s  <<< ERROR!
+org.mockito.exceptions.misusing.UnfinishedStubbingException: 
+
+Unfinished stubbing detected here:
+-> at ne.ecole.schoolmgmt.service.StudentServiceTest.testSearchStudents(StudentServiceTest.java:142)
+
+E.g. thenReturn() may be missing.
+Examples of correct stubbing:
+    when(mock.isOk()).thenReturn(true);
+    when(mock.isOk()).thenThrow(exception);
+    doThrow(exception).when(mock).someVoidMethod();
+Hints:
+ 1. missing thenReturn()
+ 2. you are trying to stub a final method, which is not supported
+ 3. you are stubbing the behaviour of another mock inside before 'thenReturn' instruction is completed
+
+	at org.modelmapper.ModelMapper.map(ModelMapper.java:420)
+	at ne.ecole.schoolmgmt.service.StudentServiceTest.testSearchStudents(StudentServiceTest.java:142)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+ne.ecole.schoolmgmt.service.StudentServiceTest.testUpdateStudent  Time elapsed: 0.051 s  <<< ERROR!
+org.mockito.exceptions.misusing.PotentialStubbingProblem: 
+
+Strict stubbing argument mismatch. Please check:
+ - this invocation of 'map' method:
+    modelMapper.map(
+    ne.ecole.schoolmgmt.dto.CreateStudentRequest@8aeab9e,
+    ne.ecole.schoolmgmt.entity.Student@2a2dc0a
+);
+    -> at ne.ecole.schoolmgmt.service.StudentService.updateStudent(StudentService.java:57)
+ - has following stubbing(s) with different arguments:
+    1. modelMapper.map(null, null);
+      -> at ne.ecole.schoolmgmt.service.StudentServiceTest.testUpdateStudent(StudentServiceTest.java:117)
+    2. modelMapper.map(null, null);
+      -> at ne.ecole.schoolmgmt.service.StudentServiceTest.testUpdateStudent(StudentServiceTest.java:118)
+Typically, stubbing argument mismatch indicates user mistake when writing tests.
+Mockito fails early so that you can debug potential problem easily.
+However, there are legit scenarios when this exception generates false negative signal:
+  - stubbing the same method multiple times using 'given().will()' or 'when().then()' API
+    Please use 'will().given()' or 'doReturn().when()' API for stubbing.
+  - stubbed method is intentionally invoked with different arguments by code under test
+    Please use default or 'silent' JUnit Rule (equivalent of Strictness.LENIENT).
+For more information see javadoc for PotentialStubbingProblem class.
+	at org.modelmapper.ModelMapper.map(ModelMapper.java:461)
+	at ne.ecole.schoolmgmt.service.StudentService.updateStudent(StudentService.java:57)
+	at ne.ecole.schoolmgmt.service.StudentServiceTest.testUpdateStudent(StudentServiceTest.java:120)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+

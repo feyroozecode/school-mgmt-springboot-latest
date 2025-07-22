@@ -12,3 +12,9 @@ CREATE DATABASE IF NOT EXISTS school_mgmt;
 -- Insérer des données de test (optionnel)
 -- Ces données seront insérées après la création des tables par l'application
 
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL
+);
+-- Ajoutez d'autres scripts d'initialisation ici

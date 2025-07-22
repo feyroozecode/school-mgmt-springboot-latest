@@ -1,44 +1,141 @@
 version: '3.8'
 
+x-common-env: &common-env
+  TZ: Africa/Niamey
+  LANG: en_US.UTF-8
+  LC_ALL: en_US.UTF-8
+
 services:
   postgres:
     image: postgres:15-alpine
     container_name: school-mgmt-postgres
     environment:
+      <<: *common-env
       POSTGRES_DB: school_mgmt
       POSTGRES_USER: school_user
-      POSTGRES_PASSWORD: school_password
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+      POSTGRES_INITDB_WALDIR: /var/lib/postgresql/wal
+    secrets:
+      - db_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_wal:/var/lib/postgresql/wal
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     networks:
       - school-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U school_user -d school_mgmt"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql:uid=70,gid=70
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MAVEN_OPTS: "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
     container_name: school-mgmt-backend
     environment:
+      <<: *common-env
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/school_mgmt
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/school_mgmt?sslmode=require
       SPRING_DATASOURCE_USERNAME: school_user
-      SPRING_DATASOURCE_PASSWORD: school_password
+      SPRING_DATASOURCE_PASSWORD_FILE: /run/secrets/db_password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      JWT_SECRET: mySecretKey123456789012345678901234567890
+      SPRING_JPA_PROPERTIES_HIBERNATE_STATISTICS: 'true'
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
       JWT_EXPIRATION: 86400000
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_NE_ECOLE: DEBUG
+      SERVER_TOMCAT_MAX_THREADS: 200
+      SERVER_TOMCAT_MIN_SPARE_THREADS: 10
+      SERVER_TOMCAT_MAX_HTTP_HEADER_SIZE: 16KB
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: when_authorized
+      MANAGEMENT_ENDPOINT_HEALTH_STATUS_HTTP_MAPPING: '{"UP": 200, "DOWN": 503}'
+      MANAGEMENT_HEALTH_DB_ENABLED: 'true'
+      MANAGEMENT_HEALTH_DISKSPACE_ENABLED: 'true'
+      MANAGEMENT_HEALTH_PING_ENABLED: 'true'
+    secrets:
+      - db_password
+      - jwt_secret
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - school-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     restart: unless-stopped
-
-volumes:
-  postgres_data:
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1.5'
+        reservations:
+          memory: 1G
+          cpus: '0.75'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 60s
+    stop_signal: SIGTERM
 
 networks:
   school-network:
     driver: bridge
+    enable_ipv6: false
 
+volumes:
+  postgres_data:
+  postgres_wal:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
